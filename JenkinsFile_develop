@@ -13,9 +13,16 @@ pipeline {
             }
         }
 
-        stage('Listing files') {
+        stage('Build image') {
             steps {
-                sh 'ls -l'
+                sh 'docker build -t arshjain12/2244_ica2 .'
+                sh 'docker run --name 2244_ica2 -d -p 8081:80 arshjain12/2244_ica2'
+            }
+        }
+        
+        stage('Testing'){
+            steps {
+                sh 'curl -I localhost:8081'
             }
         }
 
