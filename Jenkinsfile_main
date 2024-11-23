@@ -19,7 +19,7 @@ pipeline {
         stage('Test Website') {
             steps {
                 sh 'curl -I http://localhost:8082'
-            }
-        }
-    }
+}
+}
+}
 }
