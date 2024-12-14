@@ -1,8 +1,5 @@
 pipeline {
     agent any
-    environment {
-        SONAR_SCANNER_HOME = tool 'SonarScanner' // Reference the SonarQube Scanner configured in Jenkins
-    }
     stages {
         stage('Cleanup') {
             steps {
@@ -22,20 +19,6 @@ pipeline {
                 sh 'docker run -d -p 8081:80 mywebsite'
             }
         }
-
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('MySonarQube') { // Replace 'MySonarQube' with the configured SonarQube server name
-                    sh '''
-                    ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
-                      -Dsonar.projectKey=CICD \
-                      -Dsonar.sources=. \
-                      -Dsonar.host.url=http://18.212.91.236:9000 \
-                      -Dsonar.login=45f5c26845460675f48188cb369de6c8f08ec73c
-                    '''
-                 }
-              }
-         }
 
          stage('Test') {
             steps {
