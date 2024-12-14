@@ -1,13 +1,9 @@
 pipeline {
     agent any
-    environment {
-        // Define dynamic port allocation if needed
-        APP_PORT = '8081' // You can also use environment variables to select another port dynamically
-    }
     stages {
         stage('Cleanup') {
             steps {
-                cleanWs() // Clean workspace before starting
+                cleanWs()
             }
         }
 
@@ -20,69 +16,28 @@ pipeline {
         stage('Build image') {
             steps {
                 sh 'docker build -t mywebsite .'
-                script {
-                    // Check if the port is already in use, handle conflicts
-                    try {
-                        // Attempt to run the container
-                        sh "docker run -d -p ${APP_PORT}:80 mywebsite"
-                    } catch (Exception e) {
-                        // If port is already in use, stop and remove the existing container and try again
-                        echo 'Port conflict detected, handling cleanup...'
-                        sh """
-                            CONTAINER_ID=\$(docker ps -q -f "ancestor=mywebsite")
-                            if [ -n "\$CONTAINER_ID" ]; then
-                                docker stop \$CONTAINER_ID
-                                docker rm \$CONTAINER_ID
-                            fi
-                        """
-                        sh "docker run -d -p ${APP_PORT}:80 mywebsite"
-                    }
-                }
+                sh 'docker run -d -p 8081:80 mywebsite'
             }
         }
 
-        stage('Test') {
+         stage('Test') {
             steps {
-                // Perform a basic health check on the container
-                sh "curl -I localhost:${APP_PORT}"
+                sh 'curl -I localhost:8081'
             }
         }
-
         stage('Tag and Push') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    script {
-                        def buildId = env.BUILD_ID
-                        // Login to Docker Hub
-                        sh "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
-                        // Tag the image with latest and build ID
-                        sh "docker tag mywebsite jainy12/2244_ica2:latest"
-                        sh "docker tag mywebsite jainy12/2244_ica2:develop-${buildId}"
-                        // Push the images to Docker Hub
-                        sh "docker push jainy12/2244_ica2:latest"
-                        sh "docker push jainy12/2244_ica2:develop-${buildId}"
-                    }
-                }
-            }
-        }
-    }
-    post {
-        always {
-            // Cleanup Docker containers after execution
-            echo 'Cleaning up resources...'
-            sh """
-                CONTAINER_ID=\$(docker ps -q -f "name=mywebsite")
-                if [ -n "\$CONTAINER_ID" ]; then
-                    docker stop \$CONTAINER_ID
-                    docker rm \$CONTAINER_ID
-                fi
-            """
-        }
-        success {
-            echo 'Pipeline completed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed. Please check the logs for details.'
-        }
-    }
+        steps {
+        withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+            script {
+                def buildId = env.BUILD_ID
+                sh "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
+                sh "docker tag mywebsite jainy12/2244_ica2:latest"
+                sh "docker tag mywebsite jainy12/2244_ica2:develop-${env.BUILD_ID}"
+                sh "docker push jainy12/2244_ica2:latest"
+                sh "docker push jainy12/2244_ica2:develop-$buildId"
+}
+}
+}
+}
+}
 }
